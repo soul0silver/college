@@ -13,7 +13,6 @@ import { useMaterialTailwindController, setOpenConfigurator } from "@/context";
 export function Dashboard() {
   const [controller, dispatch] = useMaterialTailwindController();
   const { sidenavType } = controller;
-  console.log(routes);
   
   return (
     <div className="min-h-screen bg-blue-gray-50/50">
@@ -44,9 +43,7 @@ export function Dashboard() {
               ))
           )}
         </Routes>
-        <div className="text-blue-gray-600">
-          <Footer />
-        </div>
+        
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { collection, getDocs, addDoc, updateDoc, doc, deleteDoc, query, where } 
 import { useContext, useEffect } from "react";
 import { useState } from "react";
 import Absent from "./detail/Absent";
+import emailjs from '@emailjs/browser';
 
 function Attendance() {
     const [attend, setAtt] = useState([])
@@ -12,6 +13,8 @@ function Attendance() {
     const [newAtt, setNewAtt] = useState({ id: '', name: '', sid: "", day: 0, month: 0, year: 0, resson: "", date: null })
     const [detail, setDetail] = useState();
     const [classes, setClass] = useState([]);
+    const [learn, setLearn] = useState(0);
+    const [absent, setAbsent] = useState(0);
     const [choseClass, setChose] = useState(localStorage.getItem('class'));
     function handleDelete(id) {
         const deleteVal = doc(db, "user", id)
@@ -24,16 +27,16 @@ function Attendance() {
     const value = collection(db, 'student');
     const sub = collection(db, 'attendance')
     const getData = async (classe) => {
-        let res = await getDocs(query(value, where('class', '==',classe)))
+        let res = await getDocs(query(value, where('class', '==', classe)))
         return res;
     }
     const getClass = async () => {
         let res = await getDocs(cl)
         return res;
-      }
+    }
     function getDataTable(classes) {
         getData(classes).then(res => {
-            
+
             setData(res.docs.map(doc => {
                 let val = doc.data();
                 let id = doc.id
@@ -53,7 +56,7 @@ function Attendance() {
             setData(res.docs.map(doc => {
                 let val = doc.data();
                 let id = doc.id
-                return { name: val.name, id: id }
+                return { name: val.name, id: id, email: val.email }
             }))
         })
         getDocs(sub).then(res => {
@@ -65,14 +68,35 @@ function Attendance() {
         })
         getClass().then(res => {
             let classe = res.docs.map(doc => {
-              let val = doc.data();
-              let id = doc.id
-      
-              return { name: val.name, id: id }
+                let val = doc.data();
+                let id = doc.id
+
+                return { name: val.name, id: id }
             })
             setClass(classe);
-          })
+        })
     }, []);
+
+    const sendEmail = (e, email) => {
+        e.preventDefault();
+        var data = {
+            to_email: email,
+            class: localStorage.getItem('class'),
+            month: new Date().getMonth() + 1
+        };
+        emailjs
+            .send('service_kp8uddl', 'template_dth32l9', data, {
+                publicKey: 'G1nT_KYB02F_RWfKq',
+            })
+            .then(
+                () => {
+                    console.log('SUCCESS!');
+                },
+                (error) => {
+                    console.log('FAILED...', error.text);
+                },
+            );
+    };
 
     function getAttend(sid, month) {
         return attend?.filter(att => att.month === month && sid === att.sid).length
@@ -193,16 +217,21 @@ function Attendance() {
                         </div>}
                     </div>
                 </CardHeader>
-                
+
                 <CardBody className="overflow-x-scroll px-0 pt-0 pb-2">
-                <div className="flex space-x-3 px-4">
-                    {localStorage.getItem('role') !== 'parent' && classes.map((cl, i) => <span key={i} className="px-2 py-2 border rounded-lg border-black cursor-pointer text-center"
-                        style={choseClass === cl.name ? { backgroundColor: "#323232", color: 'white' } : {}}
-                        onClick={() => { setChose(cl.name); getDataTable(cl.name) }}
-                    >
-                        {cl.name}
-                    </span>)}
-                </div>
+                    <div className="flex space-x-3 px-4">
+                        {localStorage.getItem('role') !== 'parent' && classes.map((cl, i) => <span key={i} className="px-2 py-2 border rounded-lg border-black cursor-pointer text-center"
+                            style={choseClass === cl.name ? { backgroundColor: "#323232", color: 'white' } : {}}
+                            onClick={() => { setChose(cl.name); getDataTable(cl.name) }}
+                        >
+                            {cl.name}
+                        </span>)}
+                    </div>
+                    <div className="flex space-x-3 px-4">
+                        <span>Sĩ số: {data.length}</span>
+                        <span>Học: {learn}</span>
+                        <span>Vắng: {absent}</span>
+                    </div>
                     <table className="w-full min-w-[640px] table-auto">
                         <thead>
                             <tr>
@@ -219,25 +248,14 @@ function Attendance() {
                                         </Typography>
                                     </th>
                                 ))}
-                                {
-                                    months.map((el) => (
-                                        <th
-                                            key={el}
-                                            className="border-b border-blue-gray-50 py-3 px-5 text-left"
-                                        >
-                                            <Typography
-                                                variant="small"
-                                                className="text-[11px] font-bold uppercase text-blue-gray-400"
-                                            >
-                                                {el}
-                                            </Typography>
-                                        </th>
-                                    ))}
+                                <th>Có mặt</th>
+                                <th>Vắng</th>
+                                <th>Hành động</th>
                             </tr>
                         </thead>
                         <tbody>
                             {data.map(
-                                ({ id, name }, key) => {
+                                ({ id, name, email }, key) => {
                                     const className = `py-3 px-5 ${key === data.length - 1
                                         ? ""
                                         : "border-b border-blue-gray-50"
@@ -272,26 +290,45 @@ function Attendance() {
                                                     </div>
                                                 </div>
                                             </td>
-                                            {months.map((m, i) => <td key={i} className={className}>
-                                                <div className="flex items-center gap-4">
-                                                    <div>
-                                                        <Typography
-                                                            variant="small"
-                                                            color="blue-gray"
-                                                            className="font-semibold"
-                                                        >
-                                                            {getAttend(id, i + 1)}
-                                                        </Typography>
-                                                    </div>
-                                                </div>
-                                            </td>)}
                                             <td className={className}>
-                                                <span
-                                                    onClick={(e) => { e.preventDefault(); setDetail(id) }}
-                                                    className="text-xs font-semibold text-blue-gray-600 cursor-pointer"
-                                                >
-                                                    Chi tiết
-                                                </span>
+                                                <div className="text-center">
+
+                                                    <Typography
+                                                        variant="small"
+                                                        color="blue-gray"
+                                                    >
+                                                        <input type="radio" name="learn" id="" onChange={(e) => { setLearn(learn + 1); setAbsent(absent > 0 ? absent - 1 : 0) }} />
+                                                    </Typography>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="text-center">
+
+                                                    <Typography
+                                                        variant="small"
+                                                        color="blue-gray"
+                                                    >
+                                                        <input type="radio" name="learn" id="" onChange={(e) => { setAbsent(absent + 1); setLearn(learn > 0 ? learn - 1 : 0) }} />
+                                                    </Typography>
+                                                </div>
+                                            </td>
+                                            <td className={className}>
+                                                <div className="text-center">
+
+                                                    <Typography
+                                                        variant="small"
+                                                        color="blue-gray"
+                                                    >
+                                                        <span
+                                                            onClick={(e) => { e.preventDefault(); setDetail(id) }}
+                                                            className="text-xs font-semibold text-blue-gray-600 cursor-pointer"
+                                                        >
+                                                            Xem chi tiết
+                                                        </span> <br/>
+                                                        <span className="text-xs font-semibold text-blue-gray-600 cursor-pointer" 
+                                                        onClick={(e) => sendEmail(e, email)}>Báo phụ huynh</span>
+                                                    </Typography>
+                                                </div>
                                             </td>
                                         </tr>
                                     );

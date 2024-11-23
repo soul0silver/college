@@ -6,7 +6,7 @@ import {
   ServerStackIcon,
   RectangleStackIcon,
 } from "@heroicons/react/24/solid";
-import { Home, Profile, Tables, Notifications } from "@/pages/dashboard";
+import { Tables } from "@/pages/dashboard";
 import { SignIn } from "@/pages/auth";
 import Subjects from "./pages/subject/subject";
 import Mark from "./pages/mark/mark";
@@ -16,6 +16,9 @@ import Student from "./pages/students/Student";
 import PrivateRoute from "./router/PrivateRoute";
 import PrivateRouteAdmin from "./router/PrivateRouteAdmin";
 import PrivateRouteHomeRoom from "./router/PrivateRouteHomeRoom";
+import { Schedule } from "./pages/schedule/Schedule";
+import SummaryPage from "./pages/profile/Summary";
+import StudentMark from "./pages/profile/StudentMark";
 
 const icon = {
   className: "w-5 h-5 text-inherit",
@@ -49,10 +52,15 @@ const homeRoom = [
     path: "/mark",
     element: <PrivateRouteHomeRoom><Mark /></PrivateRouteHomeRoom>,
   },
-  
   {
     icon: <TableCellsIcon {...icon} />,
-    name: "Chấm công",
+    name: "Quản lý lịch học",
+    path: "/schedule",
+    element: <PrivateRouteHomeRoom><Schedule /></PrivateRouteHomeRoom>,
+  },
+  {
+    icon: <TableCellsIcon {...icon} />,
+    name: "Điểm danh",
     path: "/attend",
     element: <PrivateRouteHomeRoom><Attendance /></PrivateRouteHomeRoom>,
   },
@@ -66,6 +74,25 @@ const homeRoom = [
   },
 ]
 
+const parent = [
+  {
+    icon: <TableCellsIcon {...icon} />,
+    name: "Thông tin chung",
+    path: "/summary",
+    element: (
+      <SummaryPage />
+    ),
+  },
+  {
+    icon: <TableCellsIcon {...icon} />,
+    name: "Thông tin điểm",
+    path: "/student-mark",
+    element: (
+      <StudentMark />
+    ),
+  },
+]
+
 function getPages() {
   let role = localStorage.getItem('role');
   if (role === 'admin') 
@@ -75,7 +102,7 @@ function getPages() {
   if (role === 'none') 
     return [homeRoom[0], homeRoom[1]]
   if (role === 'parent') {
-    return [homeRoom[0], homeRoom[1]]
+    return [parent[0],parent[1], homeRoom[1], ]
   }
   return role === undefined || role === null && [] ;
 }

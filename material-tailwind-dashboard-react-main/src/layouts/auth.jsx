@@ -16,11 +16,6 @@ export function Auth() {
       icon: ChartPieIcon,
     },
     {
-      name: "profile",
-      path: "/dashboard/home",
-      icon: UserIcon,
-    },
-    {
       name: "sign in",
       path: "/auth/sign-in",
       icon: ArrowRightOnRectangleIcon,

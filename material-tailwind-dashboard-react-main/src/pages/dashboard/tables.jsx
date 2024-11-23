@@ -27,7 +27,6 @@ export function Tables() {
   const [fileUpload,setFileUploaded] =useState();
   const handleUpload = (e) => {
     e.preventDefault();
-
     var files = e.target.files, f = files[0];
     var reader = new FileReader();
     reader.onload = function (e) {
@@ -41,7 +40,7 @@ export function Tables() {
         setFileUploaded(dataParse);
 
         console.log(dataParse);
-        addUserList(dataParse)
+        addUserList(dataParse.map(v=>{}))
     };
     reader.readAsBinaryString(f)
     document.getElementById('file').value = null;
@@ -253,10 +252,7 @@ const addUserList = (arr)=>{
             Danh sách giáo viên
           </Typography>
           <div className="space-x-2">
-            <Button color="green">
-            <label htmlFor="file"> Nhap tu file</label>
-              <input type="file" name="file" id="file" onChange={handleUpload} hidden/>
-            </Button>
+           
           <Button color="green" onClick={()=>setShow(true)}>
             + Thêm giáo viên
           </Button>

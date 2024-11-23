@@ -23,17 +23,10 @@ export function Mark() {
   const [show, setShow] = useState(false);
   const [subject, setSubject] = useState([]);
   const [mark, setMark] = useState([]);
-  const [editM, setEditM] = useState({ id: null, mark: null, subject: null, uid: null });
+  const [editM, setEditM] = useState({ id: null, mark: null, subject: null, uid: null, type: null });
   const [classes, setClass] = useState([]);
   const [choseClass, setChose] = useState();
-
-  function handleDelete(id) {
-    const deleteVal = doc(db, "user", id)
-    deleteDoc(deleteVal).then(res => {
-      alert("Xoá thành công!");
-    })
-  }
-
+  const [type, setType] = useState('15-1');
 
   const value = collection(db, 'student');
   const sub = collection(db, 'subject');
@@ -41,8 +34,8 @@ export function Mark() {
   const cl = collection(db, 'class')
   const getData = async (className) => {
 
-    let res = localStorage.getItem('role') === 'parent' ? await getDocs(query(value, where('email','==', localStorage.getItem('email')))) : 
-    await getDocs(query(value, where('class', '==', className)))
+    let res = localStorage.getItem('role') === 'parent' ? await getDocs(query(value, where('email', '==', localStorage.getItem('email')))) :
+      await getDocs(query(value, where('class', '==', className)))
     return res;
   }
   function getDataTable(className) {
@@ -59,10 +52,10 @@ export function Mark() {
 
           return { name: val.name, id: id }
         })
-        setSubject(localStorage.getItem('role') === 'parent' || localStorage.getItem('role') === 'homeroom' ? subj 
-        : subj.filter(val => val.name === localStorage.getItem('subject')))
+        setSubject(localStorage.getItem('role') === 'parent' || localStorage.getItem('role') === 'homeroom' && classes !== localStorage.getItem('class') ? subj
+          : subj.filter(val => val.name === localStorage.getItem('subject')))
       })
-      getDocs(ma).then(res => {
+      getDocs(query(ma, where('type', '==', type))).then(res => {
         setMark(res.docs.map(doc => {
           let val = doc.data();
           let id = doc.id
@@ -72,7 +65,17 @@ export function Mark() {
     })
   }
   useEffect(() => {
-    
+    getDocs(query(ma, where('type', '==', type))).then(res => {
+
+      setMark(res.docs.map(doc => {
+        let val = doc.data();
+        let id = doc.id
+        return { id: id, uid: val.uid, mark: val.mark, subject: val.subject }
+      }))
+    })
+  }, [type])
+  useEffect(() => {
+
     getDocs(cl).then(res => {
       let classe = res.docs.map(doc => {
         let val = doc.data();
@@ -86,19 +89,20 @@ export function Mark() {
         setData(res.docs.map(doc => {
           let val = doc.data();
           let id = doc.id
-  
+
           return { name: val.name, id: id }
         }))
         getDocs(sub).then(res => {
-          setSubject(res.docs.map(doc => {
+          let subj = res.docs.map(doc => {
             let val = doc.data();
             let id = doc.id
-  
+    
             return { name: val.name, id: id }
-          }))
+          })
+          setSubject(localStorage.getItem('role') === 'parent' ||  (choseClass === localStorage.getItem('class') && localStorage.getItem('role') !== 'none') ? subj 
+          : subj.filter(val => val.name === localStorage.getItem('subject')))
         })
-        getDocs(ma).then(res => {
-  
+        getDocs(query(ma, where('type', '==', type))).then(res => {
           setMark(res.docs.map(doc => {
             let val = doc.data();
             let id = doc.id
@@ -120,20 +124,36 @@ export function Mark() {
       })
 
     else {
-      addDoc(ma, { mark: editM.mark, subject: editM.subject, uid: editM.uid }).then(r => {
+      addDoc(ma, { mark: editM.mark, subject: editM.subject, uid: editM.uid, type: type }).then(r => {
         getDataTable(choseClass)
         alert("Thêm thành công")
       })
     }
-    setEditM({ id: null, mark: null, subject: null, uid: null })
+    setEditM({ id: null, mark: null, subject: null, uid: null, type: null })
   }
   function getMark(sub, uid) {
     return mark.filter(m => m.uid === uid && m.subject === sub)[0]
   }
+
+  function getSubject(className) {
+    getDocs(sub).then(res => {
+      let subj = res.docs.map(doc => {
+        let val = doc.data();
+        let id = doc.id
+
+        return { name: val.name, id: id }
+      })
+      setSubject(subj)
+    })
+  }
+  function lastSub() {
+    return localStorage.getItem('role') === 'parent' ||  (choseClass === localStorage.getItem('class') && localStorage.getItem('role') !== 'none') ? subject.map(val=>val) 
+    : subject.filter(val => val.name === localStorage.getItem('subject'));
+  }
   const headers = ["STT", "Tên"];
   return (
     <div className="mt-12 mb-8 flex flex-col gap-12">
-      
+     
       <Card>
         <CardHeader variant="gradient" color="gray" className="mb-8 p-6">
           <div className="flex justify-between">
@@ -144,15 +164,28 @@ export function Mark() {
           </div>
         </CardHeader>
         <div className="flex space-x-3 px-4">
-          {localStorage.getItem('role') !== 'parent' && classes.map((cl,i) => <span key={i} className="px-2 py-2 border rounded-lg border-black cursor-pointer text-center" 
-          style={choseClass === cl.name ? {backgroundColor: "#323232", color: 'white'} : {}}
-          onClick={()=>{setChose(cl.name); getDataTable(cl.name)}}
+          {localStorage.getItem('role') !== 'parent' && classes.map((cl, i) => <span key={i} className="px-2 py-2 border rounded-lg border-black cursor-pointer text-center"
+            style={choseClass === cl.name ? { backgroundColor: "#323232", color: 'white' } : {}}
+            onClick={() => {
+              setChose(cl.name); getDataTable(cl.name);
+            }}
           >
-            { cl.name}
-          </span>) }
-          
+            {cl.name}
+          </span>)}
+
         </div>
         <CardBody className="overflow-x-scroll px-0 pt-0 pb-2">
+          <div className="p-4 flex gap-3" >
+            <label htmlFor="">Loại điểm: </label> {' '}
+            <select onChange={(e) => setType(e.target.value)} value={type} className="rounded-sm border-black border ">
+              <option value="15-1">15 phút lần 1</option>
+              <option value="15-2">15 phút lần 2</option>
+              <option value="45-1">45 phút HK1</option>
+              <option value="45-2">45 phút HK2</option>
+              <option value="HK1">Cuối học kỳ 1</option>
+              <option value="HK2">Cuối học kỳ 2</option>
+            </select>
+          </div>
           <table className="w-full min-w-[640px] table-auto">
             <thead>
               <tr>
@@ -170,7 +203,7 @@ export function Mark() {
                   </th>
                 ))}
                 {
-                  subject.map(el => <th
+                  lastSub().map(el => <th
                     key={el.id}
                     className="border-b border-blue-gray-50 py-3 px-5 text-left"
                   >
@@ -222,7 +255,7 @@ export function Mark() {
                           </div>
                         </div>
                       </td>
-                      { subject.filter(val => val.name === localStorage.getItem('subject')).map(sub => <td className={className}>
+                      {lastSub().map(sub => <td className={className}>
                         <div className="flex items-center gap-4 hidden-item cursor-pointer">
                           {editM.uid === id && editM.subject === sub.id && localStorage.getItem('role') !== 'parent' ? <input className="w-[25px] text-center" autoFocus
                             onChange={(e) => { setEditM({ ...editM, mark: Number(e.target.value) <= 10 ? Number(e.target.value) : 10 }) }}
@@ -253,7 +286,7 @@ export function Mark() {
                           </Typography>}
                         </div>
                       </td>)}
-                      
+
                     </tr>
                   );
                 }

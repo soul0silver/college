@@ -32,8 +32,6 @@ export function SignIn() {
           let data = re.docs.map(doc => {
             let val = doc.data();
             let id = doc.id
-            console.log({ name: val.name, email: val.email, subject: val.subject, homeroom: val.homeroom, id: id });
-
             return { name: val.name, email: val.email, subject: val.subject, homeroom: val.homeroom, id: id }
           })[0]
           if (data === undefined) {
@@ -66,7 +64,7 @@ export function SignIn() {
             localStorage.setItem('email', user.email)
             localStorage.setItem('role', 'parent')
             localStorage.setItem('login', "true")
-            location.href = '/dashboard/mark'
+            location.href = '/dashboard/summary'
           }
 
         })
